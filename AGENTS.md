@@ -5,3 +5,4 @@
 - Store TOTP entries locally; do not add network dependencies for authenticator data.
 - Check `docs/implementation-notes.md` before making changes and update it when behavior changes.
 - Build with `xtool dev build` after Swift changes when feasible.
+- Install and launch on the preferred simulator after Swift changes when feasible.

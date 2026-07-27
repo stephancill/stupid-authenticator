@@ -3,12 +3,21 @@
 - The app stores authenticator entries as JSON at `authenticator-codes.json` in the app documents directory.
 - TOTP generation supports otpauth TOTP URLs and manual Base32 secrets with SHA1, SHA256, or SHA512.
 - Manual entry always shows issuer, account, and secret fields. It attempts to prefill the secret from a raw Base32 clipboard value, or all fields from an `otpauth://` clipboard URL.
+- Manual entry defaults an empty issuer to the current date in `yyyy-MM-dd` format when saving.
 - Rows copy the current code to the system pasteboard, show a short copied toast, and update `lastCopiedAt`.
+- Rows expose a swipe Edit action that opens a sheet for changing issuer, account, and secret.
 - Rows display the next TOTP code next to the current code in a smaller muted style.
-- A circular refresh indicator next to the large title shows progress for the next visible code refresh.
+- A circular refresh indicator in the leading navigation toolbar shows progress for the next visible code refresh and hides the iOS 26 shared toolbar background.
 - Rows show compact copied time in the top-right using social-style values like `now`, `1m`, `1h`, or `1d`.
 - Code ordering is descending by `lastCopiedAt`, then descending by creation time for never-copied entries.
+- Never-copied entries and entries last copied more than a week ago are grouped in an `Older` section that is collapsed by default and expanded while searching.
+- The `Older` toggle is rendered as a plain list row, not a SwiftUI section header, to avoid default header spacing.
+- Copy-driven row reordering is animated with SwiftUI's snappy animation.
 - Search filters entries by issuer, account, or display name while preserving existing ordering.
 - QR import uses AVFoundation metadata scanning and requires `NSCameraUsageDescription` in `Info.plist`.
-- `Info.plist` registers the `otpauth` URL scheme; incoming `otpauth://` links are imported through `ContentView.onOpenURL`.
+- The QR scanner sheet includes a Cancel button over the camera preview to dismiss without importing.
+- Google Authenticator migration imports decode `otpauth-migration://offline?data=...` protobuf payloads and import TOTP entries from them.
+- `Info.plist` registers the `otpauth` and `otpauth-migration` URL schemes; incoming links are imported through `ContentView.onOpenURL`.
+- AutoFill one-time-code support uses a credential provider extension, App Group shared JSON storage, and `ASCredentialIdentityStore` identities on iOS 18+.
+- The main app only carries the App Group entitlement; `com.apple.developer.authentication-services.autofill-credential-provider` stays on the AutoFill extension because putting it on the host app prevents simulator launch.
 - `web/` contains a Bun/Vite TypeScript tester for generating TOTP enrollment QR codes and expected current codes.

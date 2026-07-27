@@ -1,10 +1,12 @@
 import SwiftUI
 
-@main
-struct StupidAuthenticatorApp: App {
-  var body: some Scene {
-    WindowGroup {
-      ContentView()
+#if canImport(UIKit)
+  @main
+  struct StupidAuthenticatorApp: App {
+    var body: some Scene {
+      WindowGroup {
+        ContentView()
+      }
     }
   }
-}
+#endif

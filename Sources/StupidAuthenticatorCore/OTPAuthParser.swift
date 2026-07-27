@@ -1,7 +1,7 @@
 import Foundation
 
-enum OTPAuthParser {
-  static func parse(_ value: String) throws -> AuthenticatorEntry {
+public enum OTPAuthParser {
+  public static func parse(_ value: String) throws -> AuthenticatorEntry {
     guard
       let components = URLComponents(string: value.trimmingCharacters(in: .whitespacesAndNewlines))
     else {
@@ -26,11 +26,11 @@ enum OTPAuthParser {
       throw AuthenticatorImportError.invalidSecret
     }
 
-    let label = components.path.dropFirst().removingPercentEncoding ?? ""
+    let label = decodeHumanReadableField(String(components.path.dropFirst()))
     let labelParts = label.split(separator: ":", maxSplits: 1).map(String.init)
     let issuerFromLabel = labelParts.count == 2 ? labelParts[0] : ""
     let account = labelParts.count == 2 ? labelParts[1] : label
-    let issuer = query["issuer"]?.removingPercentEncoding ?? issuerFromLabel
+    let issuer = query["issuer"].map(decodeHumanReadableField) ?? issuerFromLabel
     let digits = Int(query["digits"] ?? "6") ?? 6
     let period = Int(query["period"] ?? "30") ?? 30
     let algorithmValue = (query["algorithm"] ?? "SHA1").uppercased()
@@ -41,11 +41,15 @@ enum OTPAuthParser {
 
     return AuthenticatorEntry(
       issuer: issuer,
-      account: account.removingPercentEncoding ?? account,
+      account: decodeHumanReadableField(account),
       secret: secret,
       digits: digits,
       period: period,
       algorithm: algorithm
     )
+  }
+
+  private static func decodeHumanReadableField(_ value: String) -> String {
+    value.replacingOccurrences(of: "+", with: " ").removingPercentEncoding ?? value
   }
 }

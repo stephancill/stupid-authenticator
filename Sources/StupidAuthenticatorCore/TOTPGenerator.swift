@@ -1,8 +1,8 @@
 import CryptoKit
 import Foundation
 
-enum TOTPGenerator {
-  static func code(for entry: AuthenticatorEntry, at date: Date = Date()) -> String? {
+public enum TOTPGenerator {
+  public static func code(for entry: AuthenticatorEntry, at date: Date = Date()) -> String? {
     guard let secret = Base32.decode(entry.secret), entry.digits > 0, entry.period > 0 else {
       return nil
     }
@@ -37,10 +37,32 @@ enum TOTPGenerator {
   }
 }
 
-enum Base32 {
+public enum Base32 {
   private static let alphabet = Array("ABCDEFGHIJKLMNOPQRSTUVWXYZ234567")
 
-  static func decode(_ value: String) -> Data? {
+  public static func encode(_ data: Data) -> String {
+    var bits = 0
+    var value = 0
+    var output = ""
+
+    for byte in data {
+      value = (value << 8) | Int(byte)
+      bits += 8
+
+      while bits >= 5 {
+        output.append(alphabet[(value >> (bits - 5)) & 31])
+        bits -= 5
+      }
+    }
+
+    if bits > 0 {
+      output.append(alphabet[(value << (5 - bits)) & 31])
+    }
+
+    return output
+  }
+
+  public static func decode(_ value: String) -> Data? {
     let cleaned =
       value
       .uppercased()
