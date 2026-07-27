@@ -117,7 +117,7 @@ public final class AuthenticatorStore: ObservableObject {
 }
 
 public enum AuthenticatorStorage {
-  public static let appGroupID = "group.XTL-6JKMV57Y77.tech.stupid.StupidAuthenticator"
+  public static let appGroupID = "group.tech.stupid.StupidAuthenticator"
   public static let fileName = "authenticator-codes.json"
 
   public static var fileURL: URL {

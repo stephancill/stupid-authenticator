@@ -12,12 +12,13 @@
 - Code ordering is descending by `lastCopiedAt`, then descending by creation time for never-copied entries.
 - Never-copied entries and entries last copied more than a week ago are grouped in an `Older` section that is collapsed by default and expanded while searching.
 - The `Older` toggle is rendered as a plain list row, not a SwiftUI section header, to avoid default header spacing.
-- Copy-driven row reordering is animated with SwiftUI's snappy animation.
+- Copy-driven row reordering uses a short non-bouncy ease-in-out animation to avoid row overshoot when a copied code moves to the top.
 - Search filters entries by issuer, account, or display name while preserving existing ordering.
 - QR import uses AVFoundation metadata scanning and requires `NSCameraUsageDescription` in `Info.plist`.
 - The QR scanner sheet includes a Cancel button over the camera preview to dismiss without importing.
 - Google Authenticator migration imports decode `otpauth-migration://offline?data=...` protobuf payloads and import TOTP entries from them.
 - `Info.plist` registers the `otpauth` and `otpauth-migration` URL schemes; incoming links are imported through `ContentView.onOpenURL`.
 - AutoFill one-time-code support uses a credential provider extension, App Group shared JSON storage, and `ASCredentialIdentityStore` identities on iOS 18+.
-- The main app only carries the App Group entitlement; `com.apple.developer.authentication-services.autofill-credential-provider` stays on the AutoFill extension because putting it on the host app prevents simulator launch.
+- The main app and AutoFill extension both carry `com.apple.developer.authentication-services.autofill-credential-provider`; App Store/TestFlight validation requires the containing app bundle to include it when shipping the credential provider extension.
+- Shared storage uses the App Group `group.tech.stupid.StupidAuthenticator`.
 - `web/` contains a Bun/Vite TypeScript tester for generating TOTP enrollment QR codes and expected current codes.

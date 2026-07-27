@@ -6,7 +6,7 @@
 	<true/>
 	<key>com.apple.security.application-groups</key>
 	<array>
-		<string>group.XTL-6JKMV57Y77.tech.stupid.StupidAuthenticator</string>
+		<string>group.tech.stupid.StupidAuthenticator</string>
 	</array>
 </dict>
 </plist>

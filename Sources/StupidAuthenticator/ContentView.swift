@@ -97,7 +97,7 @@ import SwiftUI
               }
             }
             .listStyle(.plain)
-            .animation(.snappy, value: filteredEntries.map(\.id))
+            .animation(.easeInOut(duration: 0.22), value: filteredEntries.map(\.id))
           }
         }
         .navigationTitle("Codes")
@@ -244,7 +244,7 @@ import SwiftUI
     private func copy(_ entry: AuthenticatorEntry) {
       guard let code = TOTPGenerator.code(for: entry, at: now) else { return }
       UIPasteboard.general.string = code
-      withAnimation(.snappy) {
+      withAnimation(.easeInOut(duration: 0.22)) {
         store.markCopied(entryID: entry.id, at: now)
       }
       showCopiedToast()
