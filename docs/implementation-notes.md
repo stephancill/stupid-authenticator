@@ -6,11 +6,13 @@
 - Manual entry defaults an empty issuer to the current date in `yyyy-MM-dd` format when saving.
 - Rows copy the current code to the system pasteboard, show a short copied toast, and update `lastCopiedAt`.
 - Rows expose a swipe Edit action that opens a sheet for changing issuer, account, and secret.
-- Rows display the next TOTP code next to the current code in a smaller muted style.
+- Rows display the previous TOTP code next to the current code in a smaller muted style.
+- Build 4 (CFBundleVersion 4) switched the secondary row code from the next code to the previous code (computed one period back, `now - period`). The AutoFill extension's `AutofillInfo.plist` now carries explicit `CFBundleVersion`/`CFBundleShortVersionString` matching the app — previously Xcode defaulted the appex version to `1`, which blocked simulator launch and risked TestFlight rejection; `~/.local/bin/bump-build` keeps extension plists in sync.
 - A circular refresh indicator in the leading navigation toolbar shows progress for the next visible code refresh and hides the iOS 26 shared toolbar background.
 - Rows show compact copied time in the top-right using social-style values like `now`, `1m`, `1h`, or `1d`.
-- Code ordering is descending by `lastCopiedAt`, then descending by creation time for never-copied entries.
-- Never-copied entries and entries last copied more than a week ago are grouped in an `Older` section that is collapsed by default and expanded while searching.
+- Code ordering is descending by `activityDate` (`lastCopiedAt` if set, else `createdAt`), so freshly scanned never-used codes sort to the very top and copying still promotes a code to the top.
+- Entries with an `activityDate` older than a week and archived entries are grouped in an `Older` section that is collapsed by default and expanded while searching. A never-used code moves to `Older` once its `createdAt` is more than a week old.
+- Rows expose a swipe Archive/Unarchive action (context-sensitive label). Archiving forces an entry into the `Older` section until it is copied; copying clears the archived flag. Google migration imports and other imports start with `isArchived = true`, so they land in `Older` until used, while individual QR scans are imported with `isArchived = false` and appear as `new` at the top of the recent section.
 - The `Older` toggle is rendered as a plain list row, not a SwiftUI section header, to avoid default header spacing.
 - Copy-driven row reordering uses a short non-bouncy ease-in-out animation to avoid row overshoot when a copied code moves to the top.
 - Search filters entries by issuer, account, or display name while preserving existing ordering.
@@ -31,3 +33,4 @@
 - TestFlight export needs a provisioning profile for BOTH the main bundle and the `tech.stupid.StupidAuthenticator.autofill` extension bundle ID. The skill only creates the app profile, so a second `StupidAuthenticatorAutofill AppStore` profile was created via the ASC API and referenced in the export options plist. The extension target's Release build config in `xtool/.xtool-tmp/StupidAuthenticator.xcodeproj` was edited to pin `PROVISIONING_PROFILE_SPECIFIER` and distribution signing so the appex signs with its own profile (not the main app's).
 - The internal "Internal Testers" beta group cannot be assigned builds via the ASC API (422 "Builds cannot be assigned to this internal group") — only the external group takes the build via `betaGroups/{id}/relationships/builds`.
 - Build 3 (Delivery UUID `980810be-6953-487b-8afd-f973298f0032`) was uploaded to TestFlight and submitted for external beta review (state `WAITING_FOR_REVIEW`).
+- Build 4 (Delivery UUID `ccbb2d61-d586-4d68-bdec-23d67dd9c3b0`) shipped the previous-code change, was added to the `External` beta group, and submitted for external beta review (state `WAITING_FOR_REVIEW`). Note the release script's `ensure_group` looks for a group named `External Testers`, but this app's external group is named `External` — so `release.sh groups` tries to create a duplicate and fails on the `isInternalGroup` boolean type bug; assigning the build and submitting was done via direct ASC API calls.

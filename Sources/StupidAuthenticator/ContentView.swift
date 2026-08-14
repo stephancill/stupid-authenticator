@@ -45,6 +45,13 @@ import SwiftUI
                       editingEntry = entry
                     }
                     .tint(.blue)
+                    Button(
+                      entry.isArchived ? "Unarchive" : "Archive",
+                      systemImage: entry.isArchived ? "tray.and.arrow.up" : "archivebox"
+                    ) {
+                      store.setArchived(entryID: entry.id, isArchived: !entry.isArchived)
+                    }
+                    .tint(.gray)
                   }
                 }
                 .onDelete { offsets in
@@ -88,6 +95,13 @@ import SwiftUI
                         editingEntry = entry
                       }
                       .tint(.blue)
+                      Button(
+                        entry.isArchived ? "Unarchive" : "Archive",
+                        systemImage: entry.isArchived ? "tray.and.arrow.up" : "archivebox"
+                      ) {
+                        store.setArchived(entryID: entry.id, isArchived: !entry.isArchived)
+                      }
+                      .tint(.gray)
                     }
                   }
                   .onDelete { offsets in
@@ -169,7 +183,7 @@ import SwiftUI
           onScan: { scannedValue in
             showingScanner = false
             do {
-              try store.add(importURL: scannedValue)
+              try store.add(importURL: scannedValue, isArchived: false)
             } catch {
               importError = error.localizedDescription
             }
@@ -232,8 +246,7 @@ import SwiftUI
     }
 
     private func isOlder(_ entry: AuthenticatorEntry) -> Bool {
-      guard let lastCopiedAt = entry.lastCopiedAt else { return true }
-      return now.timeIntervalSince(lastCopiedAt) > 7 * 24 * 60 * 60
+      entry.isOlder(relativeTo: now)
     }
 
     private func delete(entries: [AuthenticatorEntry], at offsets: IndexSet) {
@@ -348,17 +361,13 @@ import SwiftUI
     let onCopy: () -> Void
 
     private var period: Int { entry.period }
-    private var remaining: Int {
-      let elapsed = Int(now.timeIntervalSince1970) % period
-      return period - elapsed
-    }
 
     private var code: String {
       TOTPGenerator.code(for: entry, at: now).map(Self.groupCode) ?? "------"
     }
 
-    private var nextCode: String {
-      TOTPGenerator.code(for: entry, at: now.addingTimeInterval(Double(remaining)))
+    private var previousCode: String {
+      TOTPGenerator.code(for: entry, at: now.addingTimeInterval(-Double(period)))
         .map(Self.groupCode) ?? "------"
     }
 
@@ -384,7 +393,7 @@ import SwiftUI
               .font(.system(size: 32, weight: .regular, design: .rounded))
               .foregroundStyle(.primary)
 
-            Text(nextCode)
+            Text(previousCode)
               .font(.system(size: 20, weight: .regular, design: .rounded))
               .foregroundStyle(.tertiary)
           }
@@ -396,7 +405,7 @@ import SwiftUI
         .contentShape(Rectangle())
       }
       .buttonStyle(.plain)
-      .accessibilityLabel("\(entry.displayName), code \(code), next code \(nextCode)")
+      .accessibilityLabel("\(entry.displayName), code \(code), previous code \(previousCode)")
       .accessibilityHint("Copies the current code")
     }
 

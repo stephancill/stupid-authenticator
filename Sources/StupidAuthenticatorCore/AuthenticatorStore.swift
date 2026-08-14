@@ -6,19 +6,7 @@ public final class AuthenticatorStore: ObservableObject {
   @Published public private(set) var entries: [AuthenticatorEntry] = []
 
   public var sortedEntries: [AuthenticatorEntry] {
-    entries.sorted { left, right in
-      switch (left.lastCopiedAt, right.lastCopiedAt) {
-      case (let leftDate?, let rightDate?):
-        if leftDate != rightDate { return leftDate > rightDate }
-      case (_?, nil):
-        return true
-      case (nil, _?):
-        return false
-      case (nil, nil):
-        break
-      }
-      return left.createdAt > right.createdAt
-    }
+    AuthenticatorEntry.sorted(entries)
   }
 
   private let fileURL: URL
@@ -35,26 +23,26 @@ public final class AuthenticatorStore: ObservableObject {
       throw AuthenticatorImportError.invalidSecret
     }
 
-    addValidated([entry])
+    addValidated([entry], isArchived: entry.isArchived)
   }
 
-  public func add(_ newEntries: [AuthenticatorEntry]) throws {
+  public func add(_ newEntries: [AuthenticatorEntry], isArchived: Bool = true) throws {
     for entry in newEntries {
       guard Base32.decode(entry.secret) != nil else {
         throw AuthenticatorImportError.invalidSecret
       }
     }
 
-    addValidated(newEntries)
+    addValidated(newEntries, isArchived: isArchived)
   }
 
-  public func add(importURL value: String) throws {
+  public func add(importURL value: String, isArchived: Bool = true) throws {
     if value.trimmingCharacters(in: .whitespacesAndNewlines).lowercased().hasPrefix(
       "otpauth-migration://")
     {
-      try add(try GoogleAuthenticatorMigrationParser.parse(value))
+      try add(try GoogleAuthenticatorMigrationParser.parse(value), isArchived: isArchived)
     } else {
-      try add(try OTPAuthParser.parse(value))
+      try add([try OTPAuthParser.parse(value)], isArchived: isArchived)
     }
   }
 
@@ -62,8 +50,9 @@ public final class AuthenticatorStore: ObservableObject {
     try add(try OTPAuthParser.parse(value))
   }
 
-  private func addValidated(_ newEntries: [AuthenticatorEntry]) {
-    for entry in newEntries {
+  private func addValidated(_ newEntries: [AuthenticatorEntry], isArchived: Bool) {
+    for var entry in newEntries {
+      entry.isArchived = isArchived
       entries.removeAll { existing in
         existing.issuer == entry.issuer && existing.account == entry.account
       }
@@ -75,6 +64,13 @@ public final class AuthenticatorStore: ObservableObject {
   public func markCopied(entryID: UUID, at date: Date) {
     guard let index = entries.firstIndex(where: { $0.id == entryID }) else { return }
     entries[index].lastCopiedAt = date
+    entries[index].isArchived = false
+    save()
+  }
+
+  public func setArchived(entryID: UUID, isArchived: Bool) {
+    guard let index = entries.firstIndex(where: { $0.id == entryID }) else { return }
+    entries[index].isArchived = isArchived
     save()
   }
 
