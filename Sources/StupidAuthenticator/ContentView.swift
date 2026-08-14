@@ -417,7 +417,7 @@ import SwiftUI
 
     private var lastCopiedText: String {
       guard let lastCopiedAt = entry.lastCopiedAt else {
-        return "new"
+        return "never"
       }
 
       let seconds = max(Int(now.timeIntervalSince(lastCopiedAt)), 0)
