@@ -23,4 +23,10 @@
       return UUID(uuidString: String(shortcutItem.type.dropFirst(copyTypePrefix.count)))
     }
   }
+
+  extension Notification.Name {
+    static let didCopyHomeScreenQuickAction = Notification.Name(
+      "didCopyHomeScreenQuickAction"
+    )
+  }
 #endif

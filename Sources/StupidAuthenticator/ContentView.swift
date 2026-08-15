@@ -174,6 +174,9 @@ import SwiftUI
       .onOpenURL { url in
         importOTPAUTH(url.absoluteString)
       }
+      .onReceive(NotificationCenter.default.publisher(for: .didCopyHomeScreenQuickAction)) { _ in
+        showCopiedToast(duration: .seconds(2))
+      }
       .sheet(isPresented: $showingManualImport) {
         ManualImportView(store: store, importError: $importError)
       }
@@ -265,14 +268,14 @@ import SwiftUI
       showCopiedToast()
     }
 
-    private func showCopiedToast() {
+    private func showCopiedToast(duration: Duration = .seconds(1.2)) {
       let toastID = UUID()
       withAnimation(.snappy) {
         copiedToastID = toastID
       }
 
       Task {
-        try? await Task.sleep(for: .seconds(1.2))
+        try? await Task.sleep(for: duration)
         await MainActor.run {
           guard copiedToastID == toastID else { return }
           withAnimation(.snappy) {
