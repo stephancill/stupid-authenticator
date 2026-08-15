@@ -46,7 +46,7 @@ public struct AuthenticatorEntry: Codable, Identifiable, Equatable {
     algorithm: TOTPAlgorithm = .sha1,
     createdAt: Date = Date(),
     lastCopiedAt: Date? = nil,
-    isArchived: Bool = true
+    isArchived: Bool = false
   ) {
     self.id = id
     self.issuer = issuer.trimmingCharacters(in: .whitespacesAndNewlines)

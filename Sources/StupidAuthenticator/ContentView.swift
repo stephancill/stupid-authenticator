@@ -5,7 +5,7 @@ import SwiftUI
   import UIKit
 
   struct ContentView: View {
-    @StateObject private var store = AuthenticatorStore()
+    @ObservedObject var store: AuthenticatorStore
     @State private var now = Date()
     @State private var showingManualImport = false
     @State private var showingScanner = false
@@ -153,9 +153,11 @@ import SwiftUI
       }
       .task {
         AutofillIdentitySync.sync(entries: store.entries)
+        HomeScreenQuickActions.update(entries: store.sortedEntries)
       }
       .onReceive(store.$entries) { entries in
         AutofillIdentitySync.sync(entries: entries)
+        HomeScreenQuickActions.update(entries: AuthenticatorEntry.sorted(entries))
       }
       .overlay(alignment: .bottom) {
         if copiedToastID != nil {

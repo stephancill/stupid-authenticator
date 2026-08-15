@@ -30,17 +30,21 @@ import Testing
   #expect(sorted.first?.isOlder(relativeTo: now) == false)
 }
 
-@Test func importedCodesAreArchivedButScannedCodesAreNot() {
-  let imported = AuthenticatorEntry(issuer: "GitHub", account: "import@example.com", secret: "JBSWY3DPEE")
-  let scanned = AuthenticatorEntry(
+@Test func importedCodesAreArchivedButNewCodesAreNot() {
+  let imported = AuthenticatorEntry(
     issuer: "GitHub",
-    account: "scan@example.com",
+    account: "import@example.com",
     secret: "JBSWY3DPEE",
-    isArchived: false
+    isArchived: true
+  )
+  let added = AuthenticatorEntry(
+    issuer: "GitHub",
+    account: "added@example.com",
+    secret: "JBSWY3DPEE"
   )
 
   #expect(imported.isArchived)
-  #expect(!scanned.isArchived)
+  #expect(!added.isArchived)
 }
 
 @Test func unusedScannedCodeMovesToOlderAfterAWeek() {
