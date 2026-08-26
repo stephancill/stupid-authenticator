@@ -7,8 +7,7 @@ import SwiftUI
 
   @available(iOS 18.0, *)
   final class CredentialProviderViewController: ASCredentialProviderViewController {
-    private var entries: [AuthenticatorEntry] = []
-    private var hostingController: UIHostingController<CredentialListView>?
+    private var hostingController: UIHostingController<AnyView>?
 
     override func prepareOneTimeCodeCredentialList(
       for serviceIdentifiers: [ASCredentialServiceIdentifier]
@@ -20,15 +19,24 @@ import SwiftUI
       for credentialRequest: ASCredentialRequest
     ) {
       guard credentialRequest.type == .oneTimeCode,
-        let entry = entry(for: credentialRequest.credentialIdentity.recordIdentifier),
+        let recordIdentifier = credentialRequest.credentialIdentity.recordIdentifier
+      else {
+        cancel(with: .credentialIdentityNotFound)
+        return
+      }
+
+      let result: AuthenticatorLoadResult
+      do {
+        result = try AuthenticatorKeychain().loadEntries()
+      } catch {
+        cancel(with: .failed)
+        return
+      }
+
+      guard let entry = result.entries.first(where: { $0.id.uuidString == recordIdentifier }),
         let code = TOTPGenerator.code(for: entry)
       else {
-        extensionContext.cancelRequest(
-          withError: NSError(
-            domain: ASExtensionErrorDomain,
-            code: ASExtensionError.credentialIdentityNotFound.rawValue
-          )
-        )
+        cancel(with: .credentialIdentityNotFound)
         return
       }
 
@@ -40,7 +48,21 @@ import SwiftUI
 
     override func prepareInterfaceToProvideCredential(for credentialRequest: ASCredentialRequest) {
       guard credentialRequest.type == .oneTimeCode,
-        let entry = entry(for: credentialRequest.credentialIdentity.recordIdentifier)
+        let recordIdentifier = credentialRequest.credentialIdentity.recordIdentifier
+      else {
+        showCredentialList()
+        return
+      }
+
+      let result: AuthenticatorLoadResult
+      do {
+        result = try AuthenticatorKeychain().loadEntries()
+      } catch {
+        showUnavailableState()
+        return
+      }
+
+      guard let entry = result.entries.first(where: { $0.id.uuidString == recordIdentifier })
       else {
         showCredentialList()
         return
@@ -50,15 +72,36 @@ import SwiftUI
     }
 
     private func showCredentialList() {
-      entries = loadEntries()
-      let rootView = CredentialListView(entries: entries) { [weak self] entry in
-        self?.complete(with: entry)
+      let result: AuthenticatorLoadResult
+      do {
+        result = try AuthenticatorKeychain().loadEntries()
+      } catch {
+        showUnavailableState()
+        return
       }
 
-      let hostingController = UIHostingController(rootView: rootView)
-      addChild(hostingController)
+      let rootView = CredentialListView(entries: result.entries) { [weak self] entry in
+        self?.complete(with: entry)
+      }
+      present(rootView)
+    }
+
+    private func showUnavailableState() {
+      present(UnavailableView())
+    }
+
+    private func present(_ rootView: some View) {
+      let hostingController = UIHostingController(rootView: AnyView(rootView))
       hostingController.view.frame = view.bounds
       hostingController.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+
+      if let old = self.hostingController {
+        old.willMove(toParent: nil)
+        old.view.removeFromSuperview()
+        old.removeFromParent()
+      }
+
+      addChild(hostingController)
       view.addSubview(hostingController.view)
       hostingController.didMove(toParent: self)
       self.hostingController = hostingController
@@ -66,9 +109,7 @@ import SwiftUI
 
     private func complete(with entry: AuthenticatorEntry) {
       guard let code = TOTPGenerator.code(for: entry) else {
-        extensionContext.cancelRequest(
-          withError: NSError(domain: ASExtensionErrorDomain, code: ASExtensionError.failed.rawValue)
-        )
+        cancel(with: .failed)
         return
       }
 
@@ -78,17 +119,10 @@ import SwiftUI
       )
     }
 
-    private func entry(for recordIdentifier: String?) -> AuthenticatorEntry? {
-      let entries = loadEntries()
-      guard let recordIdentifier else { return nil }
-      return entries.first { $0.id.uuidString == recordIdentifier }
-    }
-
-    private func loadEntries() -> [AuthenticatorEntry] {
-      guard let data = try? Data(contentsOf: AuthenticatorStorage.fileURL),
-        let entries = try? JSONDecoder().decode([AuthenticatorEntry].self, from: data)
-      else { return [] }
-      return entries
+    private func cancel(with error: ASExtensionError.Code) {
+      extensionContext.cancelRequest(
+        withError: NSError(domain: ASExtensionErrorDomain, code: error.rawValue)
+      )
     }
   }
 #endif
@@ -116,6 +150,19 @@ private struct CredentialListView: View {
         }
       }
       .navigationTitle("Codes")
+    }
+  }
+}
+
+@available(iOS 18.0, *)
+private struct UnavailableView: View {
+  var body: some View {
+    NavigationStack {
+      ContentUnavailableView(
+        "Codes unavailable",
+        systemImage: "lock.rotation",
+        description: Text("Open the Stupid Authenticator app and try again.")
+      )
     }
   }
 }

@@ -10,6 +10,7 @@ import SwiftUI
     @State private var showingManualImport = false
     @State private var showingScanner = false
     @State private var importError: String?
+    @State private var operationError: String?
     @State private var copiedToastID: UUID?
     @State private var searchText = ""
     @State private var olderExpanded = false
@@ -39,7 +40,7 @@ import SwiftUI
                   .listRowSeparator(index == 0 ? .hidden : .visible, edges: .top)
                   .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                     Button("Delete", systemImage: "trash", role: .destructive) {
-                      store.delete(entryIDs: [entry.id])
+                      delete(entryID: entry.id)
                     }
                     Button("Edit", systemImage: "pencil") {
                       editingEntry = entry
@@ -89,7 +90,7 @@ import SwiftUI
                     )
                     .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                       Button("Delete", systemImage: "trash", role: .destructive) {
-                        store.delete(entryIDs: [entry.id])
+                        delete(entryID: entry.id)
                       }
                       Button("Edit", systemImage: "pencil") {
                         editingEntry = entry
@@ -200,16 +201,32 @@ import SwiftUI
         .ignoresSafeArea()
       }
       .alert(
-        "Could not import code",
+        alertTitle,
         isPresented: Binding(
-          get: { importError != nil },
-          set: { if !$0 { importError = nil } }
+          get: {
+            importError != nil || operationError != nil || store.persistenceWarning != nil
+          },
+          set: {
+            if !$0 {
+              importError = nil
+              operationError = nil
+              store.clearPersistenceWarning()
+            }
+          }
         )
       ) {
         Button("OK", role: .cancel) {}
       } message: {
-        Text(importError ?? "Unknown error")
+        Text(alertMessage ?? "Unknown error")
       }
+    }
+
+    private var alertTitle: String {
+      importError != nil ? "Could not import code" : "Couldn't save changes"
+    }
+
+    private var alertMessage: String? {
+      operationError ?? importError ?? store.persistenceWarning
     }
 
     private var isSearching: Bool {
@@ -256,7 +273,19 @@ import SwiftUI
 
     private func delete(entries: [AuthenticatorEntry], at offsets: IndexSet) {
       let ids = Set(offsets.map { entries[$0].id })
-      store.delete(entryIDs: ids)
+      do {
+        try store.delete(entryIDs: ids)
+      } catch {
+        operationError = error.localizedDescription
+      }
+    }
+
+    private func delete(entryID: UUID) {
+      do {
+        try store.delete(entryIDs: [entryID])
+      } catch {
+        operationError = error.localizedDescription
+      }
     }
 
     private func copy(_ entry: AuthenticatorEntry) {

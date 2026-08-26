@@ -8,7 +8,9 @@ import SwiftUI
   @main
   struct StupidAuthenticatorApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+    @Environment(\.scenePhase) private var scenePhase
     @StateObject private var store = AuthenticatorStore()
+    @State private var pollingTask: Task<Void, Never>?
 
     var body: some Scene {
       WindowGroup {
@@ -16,7 +18,47 @@ import SwiftUI
           .task {
             appDelegate.connect(store: store)
           }
+          .onChange(of: scenePhase) { _, newPhase in
+            handle(scenePhase: newPhase)
+          }
       }
+    }
+
+    @MainActor
+    private func handle(scenePhase: ScenePhase) {
+      switch scenePhase {
+      case .active:
+        // iCloud Keychain synchronizes onto this device without a notification; reload now and
+        // poll while the scene stays active.
+        store.refresh()
+        startPolling()
+      case .background, .inactive:
+        stopPolling()
+      @unknown default:
+        break
+      }
+    }
+
+    @MainActor
+    private func startPolling() {
+      stopPolling()
+      pollingTask = Task { [store] in
+        while !Task.isCancelled {
+          do {
+            try await Task.sleep(for: .seconds(30))
+          } catch {
+            break
+          }
+          guard !Task.isCancelled else { break }
+          store.refresh()
+        }
+      }
+    }
+
+    @MainActor
+    private func stopPolling() {
+      pollingTask?.cancel()
+      pollingTask = nil
     }
   }
 
