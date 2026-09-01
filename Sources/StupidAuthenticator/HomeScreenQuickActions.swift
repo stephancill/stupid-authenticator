@@ -8,11 +8,11 @@
 
     static func update(entries: [AuthenticatorEntry]) {
       UIApplication.shared.shortcutItems = entries.prefix(3).map { entry in
-        let title = entry.issuer.isEmpty ? "Authenticator code" : entry.issuer
+        let parts = [entry.issuer, entry.account].filter { !$0.isEmpty }
         return UIApplicationShortcutItem(
           type: copyTypePrefix + entry.id.uuidString,
-          localizedTitle: title,
-          localizedSubtitle: entry.account.isEmpty ? nil : entry.account,
+          localizedTitle: "Copy code",
+          localizedSubtitle: parts.isEmpty ? nil : parts.joined(separator: " - "),
           icon: UIApplicationShortcutIcon(systemImageName: "doc.on.doc")
         )
       }
