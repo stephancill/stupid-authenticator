@@ -47,6 +47,8 @@ public final class AuthenticatorStore: ObservableObject {
       if let warning = result.warning {
         persistenceWarning = warning
       }
+    } catch let error as AuthenticatorRepositoryError where error.isDeviceLocked {
+      // Locked device: keep the current snapshot silently and reload once it unlocks.
     } catch {
       // A failed query must never publish an empty array.
       persistenceWarning = error.localizedDescription

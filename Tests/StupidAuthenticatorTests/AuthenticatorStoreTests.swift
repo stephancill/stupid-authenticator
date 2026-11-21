@@ -319,6 +319,20 @@ private func legacyJSON(_ entries: [AuthenticatorEntry]) throws -> Data {
 }
 
 @MainActor
+@Test func lockedDeviceRefreshKeepsSnapshotWithoutWarning() throws {
+  let harness = try StoreHarness.make()
+  let existing = entry("GitHub", "alice@example.com")
+  try harness.store.add(existing)
+
+  // errSecInteractionNotAllowed: the Keychain is unavailable while the device is locked.
+  harness.repository.loadError = .keychainFailure(status: -25308, message: "locked")
+  harness.store.refresh()
+
+  #expect(harness.store.entries.map(\.id) == [existing.id])
+  #expect(harness.store.persistenceWarning == nil)
+}
+
+@MainActor
 @Test func failedLoadRetainsReadableLegacyEntriesButDoesNotMigrate() throws {
   let repository = FakeRepository()
   repository.loadError = .keychainFailure(status: -25293, message: "simulated outage")

@@ -39,6 +39,14 @@ public enum AuthenticatorRepositoryError: LocalizedError, Equatable {
       return "Some authenticator entries could not be migrated. Open the app to try again."
     }
   }
+
+  /// Keychain refused access because the device is locked (`errSecInteractionNotAllowed`).
+  /// Items are `kSecAttrAccessibleWhenUnlocked`, and on a Mac the app stays active while the
+  /// screen is locked, so background refreshes hit this routinely; it is not a failure.
+  public var isDeviceLocked: Bool {
+    if case .keychainFailure(let status, _) = self { return status == errSecInteractionNotAllowed }
+    return false
+  }
 }
 
 /// Small entry-oriented persistence boundary used by `AuthenticatorStore`. The production

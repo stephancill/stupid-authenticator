@@ -20,6 +20,13 @@ import SwiftUI
           .onChange(of: scenePhase) { _, newPhase in
             handle(scenePhase: newPhase)
           }
+          .onReceive(
+            NotificationCenter.default.publisher(
+              for: UIApplication.protectedDataDidBecomeAvailableNotification)
+          ) { _ in
+            // Refreshes skipped while the device was locked catch up on unlock.
+            store.refresh()
+          }
       }
     }
 
