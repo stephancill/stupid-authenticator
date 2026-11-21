@@ -5,8 +5,18 @@ deploymentTarget: "17.0"
 infoPath: Info.plist
 entitlementsPath: App.entitlements
 iconPath: Resources/AppIcon.appiconset/Icon-1024.png
+capabilities:
+  - entitlementKey: com.apple.developer.authentication-services.autofill-credential-provider
+    type: AUTOFILL_CREDENTIAL_PROVIDER
+  - entitlementKey: com.apple.security.application-groups
+    type: APP_GROUPS
 extensions:
   - product: StupidAuthenticatorAutofill
     bundleID: tech.stupid.StupidAuthenticator.autofill
     infoPath: AutofillInfo.plist
     entitlementsPath: Autofill.entitlements
+    capabilities:
+      - entitlementKey: com.apple.developer.authentication-services.autofill-credential-provider
+        type: AUTOFILL_CREDENTIAL_PROVIDER
+      - entitlementKey: com.apple.security.application-groups
+        type: APP_GROUPS
