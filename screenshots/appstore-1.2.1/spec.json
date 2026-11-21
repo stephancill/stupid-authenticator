@@ -1,0 +1,11 @@
+{
+  "logo": "../../Resources/AppIcon.appiconset/Icon-1024.png",
+  "devices": { "iphone": { "raw": "raw/iphone", "out": "iphone" } },
+  "slides": [
+    { "raw": "01-list", "headline": "just your<br><span id=\"m\">codes</span>", "subtitle": "tap one to copy it. that's it", "doodles": "under('m'); logo(); arrow();" },
+    { "raw": "05-quick", "headline": "copy without<br><span id=\"m\">opening</span><br>the app", "subtitle": "hold the icon, pick a code", "doodles": "under('m'); star(); arrow();", "align": "right" },
+    { "raw": "02-older", "headline": "old codes<br>get out of<br>the <span id=\"m\">way</span>", "subtitle": "unused for a week? into older it goes", "doodles": "under('m'); star(); arrow();", "position": "bottom" },
+    { "raw": "03-search", "headline": "find any<br>code <span id=\"m\">fast</span>", "subtitle": "search sits right by your thumb", "doodles": "under('m'); star(); arrow();", "align": "right", "position": "bottom" },
+    { "raw": "04-add", "headline": "scan it,<br><span id=\"m\">done</span>", "subtitle": "or type it in. synced with icloud keychain", "doodles": "under('m'); star(); arrow();" }
+  ]
+}

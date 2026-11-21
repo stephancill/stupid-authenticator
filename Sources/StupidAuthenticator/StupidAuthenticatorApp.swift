@@ -15,6 +15,9 @@ import SwiftUI
       WindowGroup {
         ContentView(store: store)
           .task {
+            #if DEBUG
+              DemoSeed.seedIfRequested(store: store)
+            #endif
             appDelegate.connect(store: store)
           }
           .onChange(of: scenePhase) { _, newPhase in
