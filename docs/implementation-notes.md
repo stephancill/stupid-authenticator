@@ -16,6 +16,7 @@
 - The `Older` toggle is rendered as a plain list row, not a SwiftUI section header, to avoid default header spacing.
 - Copy-driven row reordering uses a short non-bouncy ease-in-out animation to avoid row overshoot when a copied code moves to the top.
 - Search filters entries by issuer, account, or display name while preserving existing ordering.
+- Search uses the native `.searchable` field placed in the bottom toolbar (`DefaultToolbarItem(kind: .search, placement: .bottomBar)` on iOS 26+, matching Messages); it is hidden while there are no codes. The copied toast sits above the bottom bar so it does not cover the search field.
 - QR import uses AVFoundation metadata scanning and requires `NSCameraUsageDescription` in `Info.plist`.
 - The QR scanner sheet includes a Cancel button over the camera preview to dismiss without importing.
 - Google Authenticator migration imports decode `otpauth-migration://offline?data=...` protobuf payloads and import TOTP entries from them.

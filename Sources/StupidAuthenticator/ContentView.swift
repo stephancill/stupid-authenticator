@@ -116,7 +116,15 @@ import SwiftUI
           }
         }
         .navigationTitle("Codes")
+        .searchable(text: $searchText, prompt: "Search codes")
+        .textInputAutocapitalization(.never)
+        .autocorrectionDisabled()
         .toolbar {
+          // The native search field in the bottom bar, as in Messages on iOS 26.
+          if #available(iOS 26.0, *), !store.sortedEntries.isEmpty {
+            DefaultToolbarItem(kind: .search, placement: .bottomBar)
+          }
+
           if !store.sortedEntries.isEmpty {
             ToolbarItem(placement: .topBarLeading) {
               CircleRefreshProgressView(progress: refreshProgress)
@@ -139,15 +147,6 @@ import SwiftUI
             }
           }
         }
-        .safeAreaInset(edge: .bottom) {
-          if !store.sortedEntries.isEmpty {
-            SearchProgressField(searchText: $searchText)
-              .padding(.horizontal, 28)
-              .padding(.top, 10)
-              .padding(.bottom, 8)
-              .background(.black.opacity(0.001))
-          }
-        }
       }
       .onReceive(timer) { value in
         now = value
@@ -168,7 +167,7 @@ import SwiftUI
             .padding(.horizontal, 18)
             .padding(.vertical, 12)
             .background(.black.opacity(0.86), in: Capsule())
-            .padding(.bottom, 26)
+            .padding(.bottom, 84)
             .transition(.move(edge: .bottom).combined(with: .opacity))
         }
       }
@@ -323,42 +322,6 @@ import SwiftUI
       } catch {
         importError = error.localizedDescription
       }
-    }
-  }
-
-  private struct SearchProgressField: View {
-    @Binding var searchText: String
-
-    var body: some View {
-      HStack(spacing: 12) {
-        Image(systemName: "magnifyingglass")
-          .font(.title3)
-          .foregroundStyle(.secondary)
-
-        TextField("Search codes", text: $searchText)
-          .textInputAutocapitalization(.never)
-          .autocorrectionDisabled()
-          .foregroundStyle(.primary)
-
-        if !searchText.isEmpty {
-          Button {
-            searchText = ""
-          } label: {
-            Image(systemName: "xmark.circle.fill")
-              .foregroundStyle(.secondary)
-          }
-          .buttonStyle(.plain)
-          .accessibilityLabel("Clear search")
-        }
-      }
-      .padding(.horizontal, 16)
-      .frame(height: 54)
-      .background(.ultraThinMaterial, in: Capsule())
-      .overlay {
-        Capsule()
-          .stroke(.secondary.opacity(0.25), lineWidth: 1)
-      }
-      .accessibilityElement(children: .contain)
     }
   }
 
