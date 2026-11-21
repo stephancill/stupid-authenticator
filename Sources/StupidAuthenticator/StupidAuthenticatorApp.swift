@@ -1,7 +1,6 @@
 import SwiftUI
 
 #if canImport(UIKit)
-  import ObjectiveC.runtime
   import StupidAuthenticatorCore
   import UIKit
 
@@ -64,6 +63,10 @@ import SwiftUI
 
   @MainActor
   final class AppDelegate: NSObject, UIApplicationDelegate {
+    /// SwiftUI's `UIApplication.shared.delegate` is its own wrapper, so the scene delegate reaches
+    /// this adaptor-owned instance through this reference instead.
+    private(set) static weak var shared: AppDelegate?
+
     private var store: AuthenticatorStore?
     private var pendingShortcut: UIApplicationShortcutItem?
 
@@ -71,18 +74,29 @@ import SwiftUI
       _ application: UIApplication,
       didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
-      pendingShortcut = launchOptions?[.shortcutItem] as? UIApplicationShortcutItem
-      return pendingShortcut == nil
+      Self.shared = self
+      return true
+    }
+
+    // Scene-based apps receive Home Screen quick actions through the scene delegate only: the
+    // launch action arrives in the connection options, and warm actions in
+    // `windowScene(_:performActionFor:completionHandler:)`. SwiftUI's own scene delegate does
+    // not forward either, so scenes use `QuickActionSceneDelegate`; SwiftUI still creates the
+    // `WindowGroup` window.
+    func application(
+      _ application: UIApplication,
+      configurationForConnecting connectingSceneSession: UISceneSession,
+      options: UIScene.ConnectionOptions
+    ) -> UISceneConfiguration {
+      let configuration = UISceneConfiguration(
+        name: nil, sessionRole: connectingSceneSession.role)
+      configuration.delegateClass = QuickActionSceneDelegate.self
+      return configuration
     }
 
     func connect(store: AuthenticatorStore) {
       self.store = store
       HomeScreenQuickActions.update(entries: store.sortedEntries)
-      if let sceneDelegate = UIApplication.shared.connectedScenes.first?.delegate,
-        let delegateClass = object_getClass(sceneDelegate)
-      {
-        installQuickActionHandler(on: delegateClass)
-      }
 
       if let pendingShortcut {
         self.pendingShortcut = nil
@@ -90,31 +104,8 @@ import SwiftUI
       }
     }
 
-    private func installQuickActionHandler(on delegateClass: AnyClass) {
-      let selector = #selector(
-        UIWindowSceneDelegate.windowScene(
-          _:performActionFor:completionHandler:)
-      )
-      guard class_getInstanceMethod(delegateClass, selector) == nil else { return }
-
-      let implementationBlock:
-        @convention(block) (
-          AnyObject, UIWindowScene, UIApplicationShortcutItem, @escaping (Bool) -> Void
-        ) -> Void = { [weak self] _, _, shortcutItem, completionHandler in
-          MainActor.assumeIsolated {
-            completionHandler(self?.handleOrDefer(shortcutItem) ?? false)
-          }
-        }
-
-      class_addMethod(
-        delegateClass,
-        selector,
-        imp_implementationWithBlock(implementationBlock),
-        "v@:@@@?"
-      )
-    }
-
-    private func handleOrDefer(_ shortcutItem: UIApplicationShortcutItem) -> Bool {
+    /// Copies the code now, or after `connect(store:)` when the scene connects before the store.
+    func handleOrDefer(_ shortcutItem: UIApplicationShortcutItem) -> Bool {
       guard store != nil else {
         pendingShortcut = shortcutItem
         return true
@@ -136,6 +127,28 @@ import SwiftUI
         NotificationCenter.default.post(name: .didCopyHomeScreenQuickAction, object: nil)
       }
       return true
+    }
+  }
+
+  @MainActor
+  final class QuickActionSceneDelegate: NSObject, UIWindowSceneDelegate {
+    var window: UIWindow?
+
+    func scene(
+      _ scene: UIScene,
+      willConnectTo session: UISceneSession,
+      options connectionOptions: UIScene.ConnectionOptions
+    ) {
+      guard let shortcutItem = connectionOptions.shortcutItem else { return }
+      _ = AppDelegate.shared?.handleOrDefer(shortcutItem)
+    }
+
+    func windowScene(
+      _ windowScene: UIWindowScene,
+      performActionFor shortcutItem: UIApplicationShortcutItem,
+      completionHandler: @escaping (Bool) -> Void
+    ) {
+      completionHandler(AppDelegate.shared?.handleOrDefer(shortcutItem) ?? false)
     }
   }
 #endif
